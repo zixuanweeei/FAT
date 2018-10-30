@@ -1,0 +1,8 @@
+build/Debug
+build/Release
+build/**/Debug
+build/**/Release
+build/.VS
+.vscode
+
+**.exe
