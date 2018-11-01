@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 
-/*
+/*!
  * Hidden Markov Model with Gaussian emissions.
  * Author: Zixuan
  */
