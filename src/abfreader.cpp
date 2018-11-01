@@ -1,3 +1,12 @@
+/* ABF file reader
+ * Author: Zixuan
+ * 
+ * Functions:
+ *   Abfreader(const char) 
+ *   Abfreader(const std::string)
+ *   read()
+ *   readsegment(int, int)
+ */
 #include "../include/abfreader.h"
 #include <string>
 
@@ -56,7 +65,10 @@ Abfreader::Abfreader(const std::string filename_) {
   }
 }
 
-// read all data samples from the file
+/* Reads all data samples from the file
+ * Some APIs are used here for reading the binary ABF file. Since the original APIs are
+ * writen in C, the data should be stored in a array and then put into a vector.
+ */ 
 void Abfreader::read() {
   float *_data_buffer = new float[num_samples];
   int no_first_phsical_channel = file_header.nADCSamplingSeq[0];
