@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cfloat>
 #include <Eigen/Dense>
+#include <random>
 
 struct ConvergenceMonitor {
   double tol;                  /* Convergence threshold. */
@@ -47,7 +48,7 @@ struct ConvergenceMonitor {
  * \param X A sequence.
  * \return logsumexp
  */
-inline double logsumexp(Eigen::RowVectorXd X, size_t size) {
+inline double logsumexp(Eigen::Array<double, 1, -1>& X, size_t size) {
   double max_value = 0;
   max_value = X.maxCoeff();
   if (std::isinf(max_value)) return -INFINITY;
@@ -70,6 +71,30 @@ inline double logsumexp(double *X, size_t size) {
 }
 
 /*!
+ * \brief Normalize probability
+ */
+void log_normalize(Eigen::ArrayXXd& a) {
+  Eigen::ArrayXd sum_row = a.rowwise().sum();
+  a -= sum_row;
+}
+
+/*!
+ * \brief Normailze
+ */
+void normalize(Eigen::ArrayXXd& a) {
+  Eigen::ArrayXd row_sum = a.rowwise().sum();
+  for (size_t i = 0; i < row_sum.rows(); i++) {
+    row_sum(i) = row_sum(i) ? row_sum(i) : 1;
+  }
+  a = a.array() / row_sum.array();
+}
+void normalize(Eigen::ArrayXd& a) {
+  double _sum = a.sum();
+  _sum = _sum ? _sum : 1;
+  a = a.array() / _sum;
+}
+
+/*!
  * \brief Log of add of exp
  * \param a
  * \param b
@@ -82,29 +107,29 @@ inline double logaddexp(double a, double b) {
 }
 
 void forward(int n_observations, int n_components,
-             Eigen::VectorXd log_stateprob,
-             Eigen::MatrixXd log_transmit,
-             Eigen::MatrixXd framelogprob,
-             Eigen::MatrixXd alpha);
+             Eigen::ArrayXd log_stateprob,
+             Eigen::ArrayXXd log_transmit,
+             Eigen::ArrayXXd framelogprob,
+             Eigen::ArrayXXd alpha);
 
 void forward(int n_observations, int n_components,
-             Eigen::VectorXd log_stateprob,
-             Eigen::MatrixXd log_transmit,
-             Eigen::MatrixXd framelogprob,
-             Eigen::MatrixXd beta);
+             Eigen::ArrayXd log_stateprob,
+             Eigen::ArrayXXd log_transmit,
+             Eigen::ArrayXXd framelogprob,
+             Eigen::ArrayXXd beta);
 
 void compute_log_xi_sum(int n_observations, int n_components,
-                        Eigen::MatrixXd alpha,
-                        Eigen::MatrixXd log_transmit,
-                        Eigen::MatrixXd bwdlattice,
-                        Eigen::MatrixXd framelogprob,
-                        Eigen::MatrixXd log_xi_sum);
+                        Eigen::ArrayXXd alpha,
+                        Eigen::ArrayXXd log_transmit,
+                        Eigen::ArrayXXd bwdlattice,
+                        Eigen::ArrayXXd framelogprob,
+                        Eigen::ArrayXXd log_xi_sum);
 
 void viterbi(int n_observations, int n_components,
-             Eigen::VectorXd log_startprob,
-             Eigen::MatrixXd log_transmit,
-             Eigen::MatrixXd framelogprob,
-             Eigen::VectorXd state_sequence,
+             Eigen::ArrayXd log_startprob,
+             Eigen::ArrayXXd log_transmit,
+             Eigen::ArrayXXd framelogprob,
+             Eigen::ArrayXd state_sequence,
              double *logprob);
 
 /*!
@@ -136,4 +161,27 @@ void free_mat(T **&a, size_t n_row, size_t n_col) {
     delete [] a[i];
   }
   delete [] a;
+}
+
+void log_univariate_normal_density(const std::vector<double>& X,
+                                   Eigen::ArrayXd& means,
+                                   Eigen::ArrayXd& covars,
+                                   Eigen::ArrayXXd& logprob) {
+  for (size_t i = 0; i < X.size(); i++) {
+    logprob.row(i) = (-pow(X[i] - means, 2.0) / (2*covars)).exp().transpose();
+  }
+  constexpr double pi = 3.14159265358979323846;
+  logprob = logprob / sqrt(2*pi*covars.transpose());
+  logprob = logprob.log();
+}
+
+double univariate_normal(const double mean,
+                       const double covars, 
+                       const int random_seed = -1) {
+  static std::random_device seed;
+  static std::mt19937 random_number_generator(random_seed == -1 ?
+                                              seed() : random_seed);
+  std::normal_distribution randn(mean, sqrt(covars));
+  
+  return randn(random_number_generator);
 }

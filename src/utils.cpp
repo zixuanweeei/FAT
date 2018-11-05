@@ -15,10 +15,10 @@ bool ConvergenceMonitor::report(double logprob) {
 }
 
 void forward(int n_observations, int n_components,
-             Eigen::VectorXd log_startprob,
-             Eigen::MatrixXd log_transmit,
-             Eigen::MatrixXd framelogprob,
-             Eigen::MatrixXd alpha) {
+             Eigen::ArrayXd log_startprob,
+             Eigen::ArrayXXd log_transmit,
+             Eigen::ArrayXXd framelogprob,
+             Eigen::ArrayXXd alpha) {
   size_t t, i, j;
   double *work_buffer = new double[n_components]{0.0};
 
@@ -38,9 +38,9 @@ void forward(int n_observations, int n_components,
 
 void backward(int n_observations, int n_components,
              double *log_stateprob,
-             Eigen::MatrixXd log_transmit,
-             Eigen::MatrixXd framelogprob,
-             Eigen::MatrixXd beta) {
+             Eigen::ArrayXXd log_transmit,
+             Eigen::ArrayXXd framelogprob,
+             Eigen::ArrayXXd beta) {
   size_t t, i, j;
   double *work_buffer = new double[n_components]{0.0};
 
@@ -60,17 +60,18 @@ void backward(int n_observations, int n_components,
 }
 
 void compute_log_xi_sum(int n_observations, int n_components,
-                        Eigen::MatrixXd alpha,
-                        Eigen::MatrixXd log_transmit,
-                        Eigen::MatrixXd beta,
-                        Eigen::MatrixXd framelogprob,
-                        Eigen::MatrixXd log_xi_sum) {
+                        Eigen::ArrayXXd alpha,
+                        Eigen::ArrayXXd log_transmit,
+                        Eigen::ArrayXXd beta,
+                        Eigen::ArrayXXd framelogprob,
+                        Eigen::ArrayXXd log_xi_sum) {
   size_t t, i, j;
   double **work_buffer = new double*[n_components];
   for (size_t i = 0; i < n_components; i++) {
     work_buffer[i] = new double[n_components]{0.0};
   }
-  double logprob = logsumexp(alpha.row(n_observations - 1), n_components);
+  Eigen::Array<double, 1, -1> row = alpha.row(n_observations - 1);
+  double logprob = logsumexp(row, n_components);
 
   for (t = 0; t < n_observations - 1; t++) {
     for (i = 0; i < n_components; i++) {
@@ -96,10 +97,10 @@ void compute_log_xi_sum(int n_observations, int n_components,
 }
 
 void viterbi(int n_observations, int n_components,
-             Eigen::VectorXd& log_startprob,
-             Eigen::MatrixXd& log_transmit,
-             Eigen::MatrixXd& framelogprob,
-             Eigen::VectorXd& state_sequence,
+             const Eigen::ArrayXd& log_startprob,
+             const Eigen::ArrayXXd& log_transmit,
+             const Eigen::ArrayXXd& framelogprob,
+             Eigen::ArrayXd& state_sequence,
              double *logprob) {
   size_t i, j, t, where_from;
   double logprob;
