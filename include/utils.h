@@ -6,6 +6,7 @@
  *     ConvergenceMonitor - Moniter the training process of the HMM
  * 
  */
+#pragma once
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -73,7 +74,7 @@ inline double logsumexp(double *X, size_t size) {
 /*!
  * \brief Normalize probability
  */
-void log_normalize(Eigen::ArrayXXd& a) {
+inline void log_normalize(Eigen::ArrayXXd& a) {
   Eigen::ArrayXd sum_row = a.rowwise().sum();
   a -= sum_row;
 }
@@ -81,17 +82,17 @@ void log_normalize(Eigen::ArrayXXd& a) {
 /*!
  * \brief Normailze
  */
-void normalize(Eigen::ArrayXXd& a) {
+inline void normalize(Eigen::ArrayXXd& a) {
   Eigen::ArrayXd row_sum = a.rowwise().sum();
-  for (size_t i = 0; i < row_sum.rows(); i++) {
+  for (size_t i = 0; i < static_cast<size_t>(row_sum.rows()); i++) {
     row_sum(i) = row_sum(i) ? row_sum(i) : 1;
   }
-  a = a.array() / row_sum.array();
+  a /= row_sum;
 }
-void normalize(Eigen::ArrayXd& a) {
+inline void normalize(Eigen::ArrayXd& a) {
   double _sum = a.sum();
   _sum = _sum ? _sum : 1;
-  a = a.array() / _sum;
+  a /= _sum;
 }
 
 /*!
@@ -106,30 +107,29 @@ inline double logaddexp(double a, double b) {
                 std::log1pl(std::expl(-std::fabsl(a - b)));
 }
 
-void forward(int n_observations, int n_components,
-             Eigen::ArrayXd log_stateprob,
-             Eigen::ArrayXXd log_transmit,
-             Eigen::ArrayXXd framelogprob,
-             Eigen::ArrayXXd alpha);
+void forward(size_t n_observations, size_t n_components,
+             const Eigen::ArrayXd& log_stateprob,
+             const Eigen::ArrayXXd& log_transmit,
+             const Eigen::ArrayXXd& framelogprob,
+             Eigen::ArrayXXd& alpha);
 
-void forward(int n_observations, int n_components,
-             Eigen::ArrayXd log_stateprob,
-             Eigen::ArrayXXd log_transmit,
-             Eigen::ArrayXXd framelogprob,
-             Eigen::ArrayXXd beta);
+void backward(size_t n_observations, size_t n_components,
+             const Eigen::ArrayXXd& log_transmit,
+             const Eigen::ArrayXXd& framelogprob,
+             Eigen::ArrayXXd& beta);
 
-void compute_log_xi_sum(int n_observations, int n_components,
-                        Eigen::ArrayXXd alpha,
-                        Eigen::ArrayXXd log_transmit,
-                        Eigen::ArrayXXd bwdlattice,
-                        Eigen::ArrayXXd framelogprob,
-                        Eigen::ArrayXXd log_xi_sum);
+void compute_log_xi_sum(size_t n_observations, size_t n_components,
+                        const Eigen::ArrayXXd& alpha,
+                        const Eigen::ArrayXXd& log_transmit,
+                        const Eigen::ArrayXXd& bwdlattice,
+                        const Eigen::ArrayXXd& framelogprob,
+                        Eigen::ArrayXXd& log_xi_sum);
 
-void viterbi(int n_observations, int n_components,
-             Eigen::ArrayXd log_startprob,
-             Eigen::ArrayXXd log_transmit,
-             Eigen::ArrayXXd framelogprob,
-             Eigen::ArrayXd state_sequence,
+void viterbi(size_t n_observations, size_t n_components,
+             const Eigen::ArrayXd& log_startprob,
+             const Eigen::ArrayXXd& log_transmit,
+             const Eigen::ArrayXXd& framelogprob,
+             Eigen::ArrayXi& state_sequence,
              double *logprob);
 
 /*!
@@ -163,10 +163,10 @@ void free_mat(T **&a, size_t n_row, size_t n_col) {
   delete [] a;
 }
 
-void log_univariate_normal_density(const std::vector<double>& X,
-                                   Eigen::ArrayXd& means,
-                                   Eigen::ArrayXd& covars,
-                                   Eigen::ArrayXXd& logprob) {
+inline void log_univariate_normal_density(const std::vector<double>& X,
+                                          Eigen::ArrayXd& means,
+                                          Eigen::ArrayXd& covars,
+                                          Eigen::ArrayXXd& logprob) {
   for (size_t i = 0; i < X.size(); i++) {
     logprob.row(i) = (-pow(X[i] - means, 2.0) / (2*covars)).exp().transpose();
   }
@@ -175,13 +175,13 @@ void log_univariate_normal_density(const std::vector<double>& X,
   logprob = logprob.log();
 }
 
-double univariate_normal(const double mean,
-                       const double covars, 
-                       const int random_seed = -1) {
+inline double univariate_normal(const double mean,
+                                const double covars, 
+                                const int random_seed = -1) {
   static std::random_device seed;
   static std::mt19937 random_number_generator(random_seed == -1 ?
                                               seed() : random_seed);
-  std::normal_distribution randn(mean, sqrt(covars));
+  std::normal_distribution<double> randn(mean, sqrt(covars));
   
   return randn(random_number_generator);
 }

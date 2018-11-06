@@ -3,8 +3,8 @@
 using namespace Eigen;
 
 struct GaussianHMM : public BaseHMM {
-  ArrayXd means_;
-  ArrayXd covars_;
+  ArrayXd *means_;
+  ArrayXd *covars_;
   ArrayXd min_covar;
   ArrayXd means_prior;
   ArrayXd means_weight;
@@ -79,4 +79,6 @@ struct GaussianHMM : public BaseHMM {
                  ArrayXd &post,
                  ArrayXd &obs,
                  ArrayXd &obs_square);
+
+  ~GaussianHMM();
 };

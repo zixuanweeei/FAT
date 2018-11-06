@@ -14,11 +14,11 @@ bool ConvergenceMonitor::report(double logprob) {
           (iter > 1 && history[iter - 1] - history[iter - 2] < tol));
 }
 
-void forward(int n_observations, int n_components,
-             Eigen::ArrayXd log_startprob,
-             Eigen::ArrayXXd log_transmit,
-             Eigen::ArrayXXd framelogprob,
-             Eigen::ArrayXXd alpha) {
+void forward(size_t n_observations, size_t n_components,
+             const Eigen::ArrayXd& log_startprob,
+             const Eigen::ArrayXXd& log_transmit,
+             const Eigen::ArrayXXd& framelogprob,
+             Eigen::ArrayXXd& alpha) {
   size_t t, i, j;
   double *work_buffer = new double[n_components]{0.0};
 
@@ -36,11 +36,10 @@ void forward(int n_observations, int n_components,
   delete [] work_buffer;
 }
 
-void backward(int n_observations, int n_components,
-             double *log_stateprob,
-             Eigen::ArrayXXd log_transmit,
-             Eigen::ArrayXXd framelogprob,
-             Eigen::ArrayXXd beta) {
+void backward(size_t n_observations, size_t n_components,
+              const Eigen::ArrayXXd& log_transmit,
+              const Eigen::ArrayXXd& framelogprob,
+              Eigen::ArrayXXd& beta) {
   size_t t, i, j;
   double *work_buffer = new double[n_components]{0.0};
 
@@ -59,12 +58,12 @@ void backward(int n_observations, int n_components,
   delete [] work_buffer;
 }
 
-void compute_log_xi_sum(int n_observations, int n_components,
-                        Eigen::ArrayXXd alpha,
-                        Eigen::ArrayXXd log_transmit,
-                        Eigen::ArrayXXd beta,
-                        Eigen::ArrayXXd framelogprob,
-                        Eigen::ArrayXXd log_xi_sum) {
+void compute_log_xi_sum(size_t n_observations, size_t n_components,
+                        const Eigen::ArrayXXd& alpha,
+                        const Eigen::ArrayXXd& log_transmit,
+                        const Eigen::ArrayXXd& beta,
+                        const Eigen::ArrayXXd& framelogprob,
+                        Eigen::ArrayXXd& log_xi_sum) {
   size_t t, i, j;
   double **work_buffer = new double*[n_components];
   for (size_t i = 0; i < n_components; i++) {
@@ -96,14 +95,13 @@ void compute_log_xi_sum(int n_observations, int n_components,
   delete [] work_buffer;
 }
 
-void viterbi(int n_observations, int n_components,
+void viterbi(size_t n_observations, size_t n_components,
              const Eigen::ArrayXd& log_startprob,
              const Eigen::ArrayXXd& log_transmit,
              const Eigen::ArrayXXd& framelogprob,
-             Eigen::ArrayXd& state_sequence,
+             Eigen::ArrayXi& state_sequence,
              double *logprob) {
   size_t i, j, t, where_from;
-  double logprob;
 
   double **viterbi_lattice = new double*[n_observations];
   for (size_t i = 0; i < n_observations; i++) {
@@ -120,7 +118,7 @@ void viterbi(int n_observations, int n_components,
         work_buffer[j] = log_transmit(j, i)
                          + viterbi_lattice[t - 1][j];
       }
-      viterbi_lattice[t][i] = *std::max_element(work_buffer, 
+      viterbi_lattice[t][i] = *std::max_element(work_buffer,
                                                 work_buffer + n_components)
                               + framelogprob(t, i);
     }
@@ -130,7 +128,7 @@ void viterbi(int n_observations, int n_components,
   where_from = std::max_element(viterbi_lattice[n_observations - 1], 
                                 viterbi_lattice[n_observations - 1] + n_components)
                - viterbi_lattice[n_observations - 1];
-  state_sequence[n_observations - 1] = where_from;
+  state_sequence[n_observations - 1] = static_cast<int>(where_from);
   *logprob = viterbi_lattice[n_observations - 1][where_from];
 
   for (t = n_observations - 2; t >= 0; t--) {
@@ -139,8 +137,10 @@ void viterbi(int n_observations, int n_components,
     }
     where_from = std::max_element(work_buffer, work_buffer + n_components)
                  - work_buffer;
-    state_sequence[t] = where_from;
+    state_sequence[t] = static_cast<int>(where_from);
   }
+  free_mat(viterbi_lattice, n_observations, n_components);
+  delete [] work_buffer;
 }
 
 IterFromIndividualLength::IterFromIndividualLength(const std::vector<double>& X,

@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cusum_test", "cusum_test\cu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scatter_test", "scatter_test\scatter_test.vcxproj", "{244DF5CA-D287-4D82-9D06-7C54525C44DF}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hmm_test", "hmm_test\hmm_test.vcxproj", "{C394E9A0-2EE7-4E8E-99C3-E987A6900940}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -51,6 +53,14 @@ Global
 		{244DF5CA-D287-4D82-9D06-7C54525C44DF}.Release|x64.Build.0 = Release|x64
 		{244DF5CA-D287-4D82-9D06-7C54525C44DF}.Release|x86.ActiveCfg = Release|Win32
 		{244DF5CA-D287-4D82-9D06-7C54525C44DF}.Release|x86.Build.0 = Release|Win32
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Debug|x64.ActiveCfg = Debug|x64
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Debug|x64.Build.0 = Debug|x64
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Debug|x86.ActiveCfg = Debug|Win32
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Debug|x86.Build.0 = Debug|Win32
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Release|x64.ActiveCfg = Release|x64
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Release|x64.Build.0 = Release|x64
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Release|x86.ActiveCfg = Release|Win32
+		{C394E9A0-2EE7-4E8E-99C3-E987A6900940}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
