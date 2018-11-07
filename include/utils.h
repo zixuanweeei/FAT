@@ -32,7 +32,9 @@ struct ConvergenceMonitor {
    */
   ConvergenceMonitor(double tol = 1e-4, size_t max_epoch = 100, 
                      bool verbose = true)
-    : tol(tol), max_epoch(max_epoch), verbose(verbose), iter(0) {};
+    : tol(tol), max_epoch(max_epoch), verbose(verbose), iter(0) {
+    std::cout << "Maximum iterations: " << ConvergenceMonitor::max_epoch << "\n";
+  };
 
   /*!
    * \brief Print the convergence reports and return a bool
@@ -108,7 +110,7 @@ inline double logaddexp(double a, double b) {
   if (std::isinf(a) && a < 0) return b;
   else if (std::isinf(b) && b < 0) return a;
   else return std::max(a, b) + 
-                std::log1pl(std::expl(-std::fabsl(a - b)));
+              std::log1pl(std::expl(-std::fabsl(a - b)));
 }
 
 void forward(size_t n_observations, size_t n_components,
@@ -171,12 +173,12 @@ inline void log_univariate_normal_density(const std::vector<double>& X,
                                           Eigen::ArrayXd& means,
                                           Eigen::ArrayXd& covars,
                                           Eigen::ArrayXXd& logprob) {
+  constexpr double pi = 3.14159265358979323846;  
   for (size_t i = 0; i < X.size(); i++) {
-    logprob.row(i) = (-pow(X[i] - means, 2.0) / (2*covars)).exp().transpose();
+    logprob.row(i) = -0.5 * (std::log(2.0 * pi) + covars.log()
+                             + pow(X[i] - means, 2.0) / covars)
+                            .transpose();
   }
-  constexpr double pi = 3.14159265358979323846;
-  logprob = logprob.rowwise() / sqrt(2*pi*covars.transpose());
-  logprob = logprob.log();
 }
 
 inline double univariate_normal(const double mean,

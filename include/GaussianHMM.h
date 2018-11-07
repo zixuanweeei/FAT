@@ -23,7 +23,6 @@ struct GaussianHMM : public BaseHMM {
               bool verbose = true, 
               double min_covar = 1e-3);
   GaussianHMM(int N,
-              ArrayXd means_prior,
               double covars_prior,
               int random_seed = 47, 
               int max_epoch = 100,

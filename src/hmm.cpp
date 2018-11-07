@@ -251,13 +251,13 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
 void BaseHMM::_do_mstep(size_t n_observations, Eigen::ArrayXd& start,
                         Eigen::ArrayXXd& trans) {
   for (size_t i = 0; i < static_cast<size_t>(start.rows()); i++) {
-    (*pi)(i) = (*pi)(i) <= 1e-8 ? (*pi)(i) : start(i);
+    (*pi)(i) = (*pi)(i) <= 1e-16 ? (*pi)(i) : start(i);
   }
   normalize(*pi);
 
   for (size_t i = 0; i < static_cast<size_t>(trans.rows()); i++) {
     for (size_t j = 0; j < static_cast<size_t>(trans.cols()); j++) {
-      (*A)(i, j) = (*A)(i, j) <= 1e-8 ? (*A)(i, j) : trans(i, j);
+      (*A)(i, j) = (*A)(i, j) <= 1e-16 ? (*A)(i, j) : trans(i, j);
     }
   }
   normalize(*A);

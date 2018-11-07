@@ -22,7 +22,6 @@ GaussianHMM::GaussianHMM(int N,
   covars_ = new ArrayXd(N);
 }
 GaussianHMM::GaussianHMM(int N,
-                         ArrayXd means_prior,
                          double covars_prior,
                          int random_seed, 
                          int max_epoch,
@@ -30,10 +29,10 @@ GaussianHMM::GaussianHMM(int N,
                          bool verbose, 
                          double _min_covar)
     : BaseHMM(N, random_seed, max_epoch, tol, verbose),
-      means_prior(means_prior),
-      means_weight(ArrayXd::Ones(N) / N),
+      means_prior(ArrayXd::Zero(N)),
+      means_weight(ArrayXd::Zero(N)),
       covars_prior(ArrayXd::Ones(N) * covars_prior),
-      covars_weight(ArrayXd::Ones(N) / N),
+      covars_weight(ArrayXd::Ones(N)),
       min_covar(ArrayXd::Ones(N) * _min_covar) {
   means_ = new ArrayXd(N);
   covars_ = new ArrayXd(N);
@@ -92,7 +91,7 @@ void GaussianHMM::_accumulate_sufficient_statistics(size_t *n_observations,
                                              beta);
   post += posteriors.colwise().sum();
   obs += (posteriors.matrix().transpose() * obs.matrix()).array();
-  obs_square += (posteriors.matrix().transpose() * obs_square.matrix()).array();
+  obs_square += (posteriors.matrix().transpose() * (obs * obs).matrix()).array();
 }
 
 void GaussianHMM::_do_mstep(size_t n_observations,
@@ -102,16 +101,14 @@ void GaussianHMM::_do_mstep(size_t n_observations,
                             ArrayXd &obs,
                             ArrayXd &obs_square) {
   BaseHMM::_do_mstep(n_observations, start, trans);
-  ArrayXd means_prior_ = means_prior;
-  ArrayXd means_weight_ = means_weight;
-  *means_ = (means_weight_ * means_prior_ + obs) / (means_weight_ + post);
+  *means_ = (means_weight * means_prior + obs) / (means_weight + post);
 
   ArrayXd covars_prior_ = covars_prior;
   ArrayXd covars_weight_ = covars_weight;
-  ArrayXd meandiff = *means_ - means_prior_;
+  ArrayXd meandiff = *means_ - means_prior;
 
-  ArrayXd cv_num = means_weight_ * pow(meandiff, 2.0) + obs_square
-                   - 2**means_ * obs
+  ArrayXd cv_num = means_weight * pow(meandiff, 2.0) + obs_square
+                   - 2 * (*means_) * obs
                    + pow(*means_, 2.0) * post;
   ArrayXd cv_den = (covars_weight_ - 1).max(0.0) + post;
   *covars_ = (covars_prior + cv_num) / cv_den.max(1e-5);

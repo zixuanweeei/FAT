@@ -82,10 +82,10 @@ void compute_log_xi_sum(size_t n_observations, size_t n_components,
                             + beta(t, j)
                             - logprob;
       }
-      for (size_t ii = 0; ii < n_components; ii++) {
-        for (size_t jj = 0; jj < n_components; jj++) {
-          log_xi_sum(ii, jj) = logaddexp(log_xi_sum(ii, jj), work_buffer[ii][jj]);
-        }
+    }
+    for (size_t ii = 0; ii < n_components; ii++) {
+      for (size_t jj = 0; jj < n_components; jj++) {
+        log_xi_sum(ii, jj) = logaddexp(log_xi_sum(ii, jj), work_buffer[ii][jj]);
       }
     }
   }
