@@ -19,7 +19,7 @@ struct BaseHMM {
   Eigen::ArrayXd *pi;             /* Initial state probability. */
   double tol;                     /* Convergence threshold */
 
-  BaseHMM(size_t N = 2, int random_seed = 47, size_t max_epoch = 10,
+  BaseHMM(size_t N = 2, int random_seed = 47, size_t max_epoch = 100,
           double tol = 1e-4, bool verbose = true) 
     : N(N), random_seed(random_seed), max_epoch(max_epoch),
       tol(tol), verbose(verbose) {
@@ -37,7 +37,7 @@ struct BaseHMM {
    * \return logprob Log likelihood of the observation X.
    * \return State-membership probabilities for each sample in X.
    */
-  void score_samples(const std::vector<double>& X, const std::vector<int>& lengths,
+  void score_samples(const std::vector<double>& X, const std::vector<size_t>& lengths,
                      double *logprob, Eigen::ArrayXXd& posteriors);
 
   /*!
@@ -46,7 +46,7 @@ struct BaseHMM {
    * \param lengths The lengths of individual sequences.
    * \return logprob Log likelihood of the observation X.
    */
-  void score(const std::vector<double>& X, const std::vector<int>& lengths,
+  void score(const std::vector<double>& X, const std::vector<size_t>& lengths,
              double *logprob);
 
   /*!
@@ -75,7 +75,7 @@ struct BaseHMM {
    * \return logprob Log likelihood of the observation X.
    * \return state_sequence Decoded latent variable sequence.
    */
-  void decode(const std::vector<double>& X, const std::vector<int>& lengths,
+  void decode(const std::vector<double>& X, const std::vector<size_t>& lengths,
               void (BaseHMM::*decoder)(const std::vector<double>&, double *, Eigen::ArrayXi&),
               double *logprob, Eigen::ArrayXi& state_sequence);
 
@@ -85,7 +85,7 @@ struct BaseHMM {
    * \param length Lengths of individual sequences.
    * \return state_sequence Decoded latent variable sequence.
    */
-  void predict(const std::vector<double>& X, const std::vector<int>& lengths,
+  void predict(const std::vector<double>& X, const std::vector<size_t>& lengths,
                Eigen::ArrayXi& state_sequence);
   
   /*!
@@ -95,7 +95,7 @@ struct BaseHMM {
    * \return posteriors Latent variable probabilities for each sample in X.
    */
   void predict_proba(const std::vector<double>& X,
-                     const std::vector<int>& lengths,
+                     const std::vector<size_t>& lengths,
                      Eigen::ArrayXXd& posteriors);
   
   /*!
@@ -113,7 +113,7 @@ struct BaseHMM {
    * \param X Obeservation sequences.
    * \param lengths Lengths of individual sequences.
    */
-  void fit(const std::vector<double>& X, const std::vector<int>& lengths);
+  void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
 
   /*!
    * \brief Viterbi algorithm.
@@ -152,7 +152,7 @@ struct BaseHMM {
    * \brief Initializes model parameters prior to fitting.
    * \param X Observation sequence.
    */
-  virtual void _init(const std::vector<double>& X);
+  virtual void _init(const std::vector<double>& X, const std::vector<size_t>& lengths);
 
   /*! 
    * \brief Compute per-component log probability under the model.

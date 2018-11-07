@@ -7,6 +7,7 @@
  * 
  */
 #pragma once
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -16,12 +17,12 @@
 
 struct ConvergenceMonitor {
   double tol;                  /* Convergence threshold. */
-  int max_epoch;              /* Maximum number of epoch to update the patameters. */
+  size_t max_epoch;              /* Maximum number of epoch to update the patameters. */
   bool verbose;               /* If `true` then per-interaction convergence reports
                                 are printed. Otherwise, the moniter is mute. */
   std::vector<double> history; /* The log probility of the data for the last two training
                                 iteractions. */
-  int iter;                   /* Iteration times. */
+  size_t iter;                   /* Iteration times. */
 
   /*!
    * \brief Constructor for ConvergenceMonitor class
@@ -29,8 +30,8 @@ struct ConvergenceMonitor {
    * \param max_epoch Maximum number of epoch.
    * \param verbose Whether to print the convergence reports.
    */
-  ConvergenceMonitor(double tol = 1e-4, int max_epoch = 100, 
-                     bool verbose = true) 
+  ConvergenceMonitor(double tol = 1e-4, size_t max_epoch = 100, 
+                     bool verbose = true)
     : tol(tol), max_epoch(max_epoch), verbose(verbose), iter(0) {};
 
   /*!
@@ -58,7 +59,7 @@ inline double logsumexp(Eigen::Array<double, 1, -1>& X, size_t size) {
     acc += std::expl(X(i) - max_value);
   }
 
-  return std::logl(acc + max_value);
+  return std::logl(acc) + max_value;
 }
 inline double logsumexp(double *X, size_t size) {
   double max_value = *std::max_element(X, X + size);
@@ -67,16 +68,19 @@ inline double logsumexp(double *X, size_t size) {
   for (size_t i = 0; i < size; i++) {
     acc += std::expl(X[i] - max_value);
   }
-
-  return std::logl(acc + max_value);
+  return std::logl(acc) + max_value;
 }
 
 /*!
  * \brief Normalize probability
  */
 inline void log_normalize(Eigen::ArrayXXd& a) {
-  Eigen::ArrayXd sum_row = a.rowwise().sum();
-  a -= sum_row;
+  Eigen::ArrayXd sum_row(a.rows());
+  for (size_t i = 0; i < static_cast<size_t>(a.rows()); i++) {
+    Eigen::Array<double, 1, -1> row = a.row(i).transpose();
+    sum_row(i) = logsumexp(row, static_cast<size_t>(a.cols()));
+  }
+  a.colwise() -= sum_row;
 }
 
 /*!
@@ -87,7 +91,7 @@ inline void normalize(Eigen::ArrayXXd& a) {
   for (size_t i = 0; i < static_cast<size_t>(row_sum.rows()); i++) {
     row_sum(i) = row_sum(i) ? row_sum(i) : 1;
   }
-  a /= row_sum;
+  a = a.colwise() / row_sum;
 }
 inline void normalize(Eigen::ArrayXd& a) {
   double _sum = a.sum();
@@ -141,7 +145,7 @@ struct IterFromIndividualLength {
   size_t t = 0;
   size_t maxt = 0;
   size_t n_observations = 0;
-  IterFromIndividualLength(const std::vector<double>& X, const std::vector<int>& lengths);
+  IterFromIndividualLength(const std::vector<double>& X, const std::vector<size_t>& lengths);
   size_t get_start();
   size_t get_end();
   ~IterFromIndividualLength();
@@ -171,7 +175,7 @@ inline void log_univariate_normal_density(const std::vector<double>& X,
     logprob.row(i) = (-pow(X[i] - means, 2.0) / (2*covars)).exp().transpose();
   }
   constexpr double pi = 3.14159265358979323846;
-  logprob = logprob / sqrt(2*pi*covars.transpose());
+  logprob = logprob.rowwise() / sqrt(2*pi*covars.transpose());
   logprob = logprob.log();
 }
 

@@ -6,7 +6,7 @@
 typedef void (BaseHMM::*decoder)(const std::vector<double>&, double *, Eigen::ArrayXi&);
 
 void BaseHMM::score_samples(const std::vector<double>& X,
-                            const std::vector<int>& lengths,
+                            const std::vector<size_t>& lengths,
                             double *logprob, Eigen::ArrayXXd& posteriors) {
   size_t n_observations = X.size();
   size_t n_individuals = lengths.size();
@@ -37,7 +37,7 @@ void BaseHMM::score_samples(const std::vector<double>& X,
 }
 
 void BaseHMM::score(const std::vector<double>& X,
-                    const std::vector<int>& lengths,
+                    const std::vector<size_t>& lengths,
                     double *logprob) {
   IterFromIndividualLength iter(X, lengths);
   size_t n_individuals = lengths.size();
@@ -68,7 +68,7 @@ void BaseHMM::_decode_map(const std::vector<double>& X,
                           double *logprob,
                           Eigen::ArrayXi& state_sequence) {
   Eigen::ArrayXXd posteriors(X.size(), N);
-  score_samples(X, std::vector<int>(), nullptr, posteriors);
+  score_samples(X, std::vector<size_t>(), nullptr, posteriors);
   *logprob = 0;
   for (size_t i = 0; i < X.size(); i++) {
     double tmp_log = posteriors.row(i).maxCoeff(&state_sequence[i]);
@@ -76,7 +76,7 @@ void BaseHMM::_decode_map(const std::vector<double>& X,
   }
 }
 
-void BaseHMM::decode(const std::vector<double>& X, const std::vector<int>& lengths,
+void BaseHMM::decode(const std::vector<double>& X, const std::vector<size_t>& lengths,
                      decoder d,
                      double *logprob, Eigen::ArrayXi& state_sequence) {
   size_t n_observations = X.size();
@@ -92,17 +92,17 @@ void BaseHMM::decode(const std::vector<double>& X, const std::vector<int>& lengt
     Eigen::ArrayXi tmp_state_sequence(static_cast<int>(end - start));
     (this->*d)(x, &tmp_logprob, tmp_state_sequence);
     if (logprob != nullptr) *logprob += tmp_logprob;
-    state_sequence.block(start, 0, end - start, 0) = tmp_state_sequence;
+    state_sequence.block(start, 0, end - start, 1) = tmp_state_sequence;
   }
 }
 
-void BaseHMM::predict(const std::vector<double>& X, const std::vector<int>& lengths,
+void BaseHMM::predict(const std::vector<double>& X, const std::vector<size_t>& lengths,
                       Eigen::ArrayXi& state_sequence) {
   decode(X, lengths, &BaseHMM::_decode_viterbi, nullptr, state_sequence);
 }
 
 void BaseHMM::predict_proba(const std::vector<double>& X,
-                            const std::vector<int>& lengths,
+                            const std::vector<size_t>& lengths,
                             Eigen::ArrayXXd& posteriors) {
   score_samples(X, lengths, nullptr, posteriors);
 }
@@ -139,9 +139,9 @@ void BaseHMM::sample(size_t n_samples, int random_seed, std::vector<double>& X,
   }
 }
 
-void BaseHMM::fit(const std::vector<double>& X, const std::vector<int>& lengths) {
-  _init(X);
-  ConvergenceMonitor moniter(1e-4, 10, true);
+void BaseHMM::fit(const std::vector<double>& X, const std::vector<size_t>& lengths) {
+  _init(X, lengths);
+  ConvergenceMonitor moniter(1e-4, max_epoch, true);
   IterFromIndividualLength iter(X, lengths);
   size_t n_observations;
   size_t n_individuals = lengths.size() ? lengths.size() : 1;
@@ -203,18 +203,21 @@ void BaseHMM::_do_backward_pass(Eigen::ArrayXXd& framelogprob,
                                 Eigen::ArrayXXd& beta) {
   size_t n_samples = static_cast<size_t>(framelogprob.rows());
   size_t n_components = static_cast<size_t>(framelogprob.cols());
-  const Eigen::ArrayXd log_pi = pi->log();
-  backward(n_samples, n_components, log_pi, framelogprob, beta);
+  const Eigen::ArrayXXd log_A = A->log();
+  backward(n_samples, n_components, log_A, framelogprob, beta);
 }
 
 void BaseHMM::_compute_posteriors(Eigen::ArrayXXd& alpha, Eigen::ArrayXXd& beta, 
                                   Eigen::ArrayXXd& log_gamma) {
   Eigen::ArrayXXd tmp_log_gamma = alpha + beta;
   log_normalize(tmp_log_gamma);
+  // std::cout << "In _compute_posteriors:\n"
+  //           << "tmp_log_gamma:\n" << tmp_log_gamma << "\n";
   log_gamma = tmp_log_gamma.exp();
 }
 
-void BaseHMM::_init(const std::vector<double>& X) { }
+void BaseHMM::_init(const std::vector<double>& X, 
+                    const std::vector<size_t>& lengths) { }
 
 void BaseHMM::_initialize_sufficient_statistics(size_t *n_observations,
                                                 Eigen::ArrayXd &start,
@@ -239,7 +242,7 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
 
   Eigen::ArrayXXd log_xi_sum(n_components, n_components);
   log_xi_sum = -INFINITY * Eigen::ArrayXXd::Ones(n_components, n_components);
-  const Eigen::ArrayXXd log_trans = trans.log();
+  const Eigen::ArrayXXd log_trans = (*A).log();
   compute_log_xi_sum(n_samples, n_components, alpha, log_trans, beta, 
                      framelogprob, log_xi_sum);
   trans += log_xi_sum.exp();
@@ -247,16 +250,14 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
 
 void BaseHMM::_do_mstep(size_t n_observations, Eigen::ArrayXd& start,
                         Eigen::ArrayXXd& trans) {
-  Eigen::ArrayXd pi_ = (*pi) + start - Eigen::ArrayXd::Ones(pi_.rows());
-  for (size_t i = 0; i < static_cast<size_t>(pi_.rows()); i++) {
-    (*pi)(i) = (*pi)(i) == 0 ? (*pi)(i) : pi_(i);
+  for (size_t i = 0; i < static_cast<size_t>(start.rows()); i++) {
+    (*pi)(i) = (*pi)(i) <= 1e-8 ? (*pi)(i) : start(i);
   }
   normalize(*pi);
-  
-  Eigen::ArrayXXd A_ = *A + trans - 1.0;
-  for (size_t i = 0; i < static_cast<size_t>(A_.rows()); i++) {
-    for (size_t j = 0; j < static_cast<size_t>(A_.cols()); j++) {
-      (*A)(i, j) = (*A)(i, j) == 0.0 ? (*A)(i, j) : A_(i, j);
+
+  for (size_t i = 0; i < static_cast<size_t>(trans.rows()); i++) {
+    for (size_t j = 0; j < static_cast<size_t>(trans.cols()); j++) {
+      (*A)(i, j) = (*A)(i, j) <= 1e-8 ? (*A)(i, j) : trans(i, j);
     }
   }
   normalize(*A);

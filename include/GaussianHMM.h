@@ -18,7 +18,7 @@ struct GaussianHMM : public BaseHMM {
               ArrayXd covars_prior,
               ArrayXd covars_weight, 
               int random_seed = 47, 
-              int max_epoch = 10,
+              int max_epoch = 100,
               double tol = 1e-4, 
               bool verbose = true, 
               double min_covar = 1e-3);
@@ -26,7 +26,7 @@ struct GaussianHMM : public BaseHMM {
               ArrayXd means_prior,
               double covars_prior,
               int random_seed = 47, 
-              int max_epoch = 10,
+              int max_epoch = 100,
               double tol = 1e-4, 
               bool verbose = true, 
               double min_covar = 1e-3);
@@ -35,7 +35,7 @@ struct GaussianHMM : public BaseHMM {
   * \brief Initialize
   */
   void _init(const std::vector<double>& X,
-             const std::vector<double>& lengths);
+             const std::vector<size_t>& lengths);
 
   /*!
    * \brief Compute log likelihood of Gaussian Distribution

@@ -40,8 +40,8 @@ GaussianHMM::GaussianHMM(int N,
 }
 
 void GaussianHMM::_init(const std::vector<double>& X,
-                        const std::vector<double>& lengths) {
-  
+                        const std::vector<size_t>& lengths) {
+  BaseHMM::_init(X, lengths);
   Kmeans kmeans(BaseHMM::N, 100);
   kmeans.fit(X);
   *means_ = *(kmeans.means);

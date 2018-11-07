@@ -4,14 +4,14 @@
 bool ConvergenceMonitor::report(double logprob) {
   if (verbose) {
     double delta = history.size() ? (logprob - history.back()) : std::nan("1");
-    printf("Epoch[%04d] - logrob:%6.4f, delta:%6.4f", iter, logprob, delta);
+    printf("Epoch[%04zd] - logrob:%6.4f, delta:%6.4f\n", iter, logprob, delta);
   }
 
   history.push_back(logprob);
   iter++;
 
   return (iter == max_epoch || 
-          (iter > 1 && history[iter - 1] - history[iter - 2] < tol));
+          (iter > 1 && std::abs(history[iter - 1] - history[iter - 2]) < tol));
 }
 
 void forward(size_t n_observations, size_t n_components,
@@ -40,13 +40,14 @@ void backward(size_t n_observations, size_t n_components,
               const Eigen::ArrayXXd& log_transmit,
               const Eigen::ArrayXXd& framelogprob,
               Eigen::ArrayXXd& beta) {
-  size_t t, i, j;
+  size_t i, j;
+  int t;
   double *work_buffer = new double[n_components]{0.0};
 
   for (i = 0; i < n_components; i++) {
-    beta(n_observations -1, i) = 0.0;
+    beta(n_observations - 1, i) = 0.0;
   }
-  for (t = n_observations - 2; t >= 0; t--) {
+  for (t = static_cast<int>(n_observations - 2); t >= 0; t--) {
     for (i = 0; i < n_components; i++) {
       for (j = 0; j < n_components; j++) {
         work_buffer[j] = log_transmit(i, j) + framelogprob(t + 1, j)
@@ -83,7 +84,7 @@ void compute_log_xi_sum(size_t n_observations, size_t n_components,
       }
       for (size_t ii = 0; ii < n_components; ii++) {
         for (size_t jj = 0; jj < n_components; jj++) {
-          log_xi_sum(ii, jj) = logaddexp(log_xi_sum(i, j), work_buffer[i][j]);
+          log_xi_sum(ii, jj) = logaddexp(log_xi_sum(ii, jj), work_buffer[ii][jj]);
         }
       }
     }
@@ -144,7 +145,7 @@ void viterbi(size_t n_observations, size_t n_components,
 }
 
 IterFromIndividualLength::IterFromIndividualLength(const std::vector<double>& X,
-                                                   const std::vector<int>& lengths) {
+                                                   const std::vector<size_t>& lengths) {
   maxt = lengths.size();
   n_observations = X.size();
   if (maxt > 0) {
