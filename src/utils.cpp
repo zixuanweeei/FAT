@@ -50,7 +50,8 @@ void backward(size_t n_observations, size_t n_components,
   for (t = static_cast<int>(n_observations - 2); t >= 0; t--) {
     for (i = 0; i < n_components; i++) {
       for (j = 0; j < n_components; j++) {
-        work_buffer[j] = log_transmit(i, j) + framelogprob(t + 1, j)
+        work_buffer[j] = log_transmit(i, j)
+                         + framelogprob(t + 1, j)
                          + beta(t + 1, j);
       }
       beta(t, i) = logsumexp(work_buffer, n_components);
@@ -68,7 +69,7 @@ void compute_log_xi_sum(size_t n_observations, size_t n_components,
   size_t t, i, j;
   double **work_buffer = new double*[n_components];
   for (size_t i = 0; i < n_components; i++) {
-    work_buffer[i] = new double[n_components]{0.0};
+    work_buffer[i] = new double[n_components]{-INFINITY};
   }
   Eigen::Array<double, 1, -1> row = alpha.row(n_observations - 1);
   double logprob = logsumexp(row, n_components);

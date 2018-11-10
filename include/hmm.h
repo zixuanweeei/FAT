@@ -13,10 +13,10 @@ struct BaseHMM {
   int random_seed;                /* A random number generator seed. */
   size_t max_epoch;                  /* Maximum number of epoch to update the patameters. */
   bool verbose;                   /* Whether to rint the convergence reports. */
-  Eigen::ArrayXXd *A;             /* NxN matrix. A[i][j] is the transition prob 
+  Eigen::ArrayXXd A;             /* NxN matrix. A[i][j] is the transition prob 
                                     of going from state i at time t to state j at 
                                     time t + 1. */
-  Eigen::ArrayXd *pi;             /* Initial state probability. */
+  Eigen::ArrayXd pi;             /* Initial state probability. */
   double tol;                     /* Convergence threshold */
 
   BaseHMM(size_t N = 2, int random_seed = 47, size_t max_epoch = 100,
@@ -24,10 +24,8 @@ struct BaseHMM {
     : N(N), random_seed(random_seed), max_epoch(max_epoch),
       tol(tol), verbose(verbose) {
   double init_value = 1./N;
-  pi = new Eigen::ArrayXd(N);
-  *pi = init_value * Eigen::ArrayXd::Ones(N);
-  A = new Eigen::ArrayXXd(N, N);
-  *A = init_value * Eigen::ArrayXXd::Ones(N, N);
+  pi = init_value * Eigen::ArrayXd::Ones(N);
+  A = init_value * Eigen::ArrayXXd::Ones(N, N);
 };
 
   /*!
@@ -113,7 +111,7 @@ struct BaseHMM {
    * \param X Obeservation sequences.
    * \param lengths Lengths of individual sequences.
    */
-  void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
+  virtual void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
 
   /*!
    * \brief Viterbi algorithm.
@@ -215,5 +213,5 @@ struct BaseHMM {
   /*!
    * \brief Deconstructor
    */
-  ~BaseHMM();
+  // ~BaseHMM();
 };

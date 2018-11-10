@@ -22,10 +22,10 @@ int main() {
 
   GaussianHMM hmm(2, var, 47, 1000);
   std::cout << "Max epoch - " << hmm.max_epoch << "\n";
-  *(hmm.pi) = start;
-  *(hmm.means_) = clusters;
-  *(hmm.A) = trans;
-  *(hmm.covars_) = ArrayXd::Ones(2) * var;
+  hmm.pi = start;
+  hmm.means_ = clusters;
+  hmm.A = trans;
+  hmm.covars_ = ArrayXd::Ones(2) * var;
 
   int n_sample = 1000;
   ArrayXi state_seqence(n_sample);
@@ -40,14 +40,14 @@ int main() {
   signal_writer.close();
 
   std::cout << "******************* Fitting test *******************\n";
-  GaussianHMM fit_hmm(2, 1.0, 47, 1000);
+  GaussianHMM fit_hmm(2, 1e-2, 47, 100);
   std::vector<size_t> lengths;
   std::cout << "Start to fit X ...\n";
   fit_hmm.fit(X, lengths);
   std::cout << "Fitted result:\n"
-            << "Mean:\n" << *(fit_hmm.means_) << "\n"
-            << "Var: \n" << *(fit_hmm.covars_) << "\n"
-            << "A: \n" << *(fit_hmm.A) << "\n";
+            << "Mean:\n" << fit_hmm.means_ << "\n"
+            << "Var: \n" << fit_hmm.covars_ << "\n"
+            << "A: \n" << fit_hmm.A << "\n";
 
   return 0;
 }

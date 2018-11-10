@@ -53,7 +53,7 @@ struct ConvergenceMonitor {
  * \return logsumexp
  */
 inline double logsumexp(Eigen::Array<double, 1, -1>& X, size_t size) {
-  double max_value = 0;
+  double max_value = 0.0;
   max_value = X.maxCoeff();
   if (std::isinf(max_value)) return -INFINITY;
   double acc = 0.0;
@@ -79,7 +79,7 @@ inline double logsumexp(double *X, size_t size) {
 inline void log_normalize(Eigen::ArrayXXd& a) {
   Eigen::ArrayXd sum_row(a.rows());
   for (size_t i = 0; i < static_cast<size_t>(a.rows()); i++) {
-    Eigen::Array<double, 1, -1> row = a.row(i).transpose();
+    Eigen::Array<double, 1, -1> row = a.row(i);
     sum_row(i) = logsumexp(row, static_cast<size_t>(a.cols()));
   }
   a.colwise() -= sum_row;
@@ -173,7 +173,7 @@ inline void log_univariate_normal_density(const std::vector<double>& X,
                                           Eigen::ArrayXd& means,
                                           Eigen::ArrayXd& covars,
                                           Eigen::ArrayXXd& logprob) {
-  constexpr double pi = 3.14159265358979323846;  
+  constexpr double pi = 3.141592653;  
   for (size_t i = 0; i < X.size(); i++) {
     logprob.row(i) = -0.5 * (std::log(2.0 * pi) + covars.log()
                              + pow(X[i] - means, 2.0) / covars)

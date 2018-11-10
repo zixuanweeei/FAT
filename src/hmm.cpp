@@ -109,18 +109,19 @@ void BaseHMM::predict_proba(const std::vector<double>& X,
 
 void BaseHMM::sample(size_t n_samples, int random_seed, std::vector<double>& X,
                      Eigen::ArrayXi& state_sequence) {
-  Eigen::ArrayXd pi_cdf(pi->rows());
-  pi_cdf(0) = (*pi)(0);
-  for (size_t i = 1; i < static_cast<size_t>(pi->rows()); i++) {
-    pi_cdf(i) = pi_cdf(i - 1) + (*pi)(i);
+  Eigen::ArrayXd pi_cdf(pi.rows());
+  pi_cdf(0) = pi(0);
+  for (size_t i = 1; i < static_cast<size_t>(pi.rows()); i++) {
+    pi_cdf(i) = pi_cdf(i - 1) + pi(i);
   }
 
-  Eigen::ArrayXXd A_cdf(A->rows(), A->cols());
-  A_cdf.col(0) = A->col(0);
-  for (size_t i = 1; i < static_cast<size_t>(A->cols()); i++) {
-    A_cdf.col(i) = A_cdf.col(i - 1) + A->col(i);
+  Eigen::ArrayXXd A_cdf(A.rows(), A.cols());
+  A_cdf.col(0) = A.col(0);
+  for (size_t i = 1; i < static_cast<size_t>(A.cols()); i++) {
+    A_cdf.col(i) = A_cdf.col(i - 1) + A.col(i);
   }
-  std::default_random_engine random_generator(random_seed);
+  std::random_device seed;
+  std::default_random_engine random_generator(random_seed == -1 ? seed() : random_seed);
   std::uniform_real_distribution<double> proba(0., 1.);
 
   int currstate = 0;
@@ -182,8 +183,8 @@ void BaseHMM::_do_viterbi_pass(Eigen::ArrayXXd& framelogprob, double *logprob,
   size_t n_samples = static_cast<size_t>(framelogprob.rows());
   size_t n_components = static_cast<size_t>(framelogprob.cols());
 
-  const Eigen::ArrayXd log_pi = pi->log();
-  const Eigen::ArrayXXd log_A = A->log();
+  const Eigen::ArrayXd log_pi = pi.log();
+  const Eigen::ArrayXXd log_A = A.log();
   viterbi(n_samples, n_components, log_pi, log_A, framelogprob,
           state_sequence, logprob);
 }
@@ -192,8 +193,8 @@ void BaseHMM::_do_forward_pass(Eigen::ArrayXXd& framelogprob, double *logprob,
                                Eigen::ArrayXXd& alpha) {
   size_t n_samples = static_cast<size_t>(framelogprob.rows());
   size_t n_components = static_cast<size_t>(framelogprob.cols());
-  const Eigen::ArrayXd log_pi = pi->log();
-  const Eigen::ArrayXXd log_A = A->log();
+  const Eigen::ArrayXd log_pi = pi.log();
+  const Eigen::ArrayXXd log_A = A.log();
   forward(n_samples, n_components, log_pi, log_A, framelogprob, alpha);
   Eigen::Array<double, 1, -1> row = alpha.row(alpha.rows() - 1);
   *logprob = logsumexp(row, alpha.cols());
@@ -203,21 +204,23 @@ void BaseHMM::_do_backward_pass(Eigen::ArrayXXd& framelogprob,
                                 Eigen::ArrayXXd& beta) {
   size_t n_samples = static_cast<size_t>(framelogprob.rows());
   size_t n_components = static_cast<size_t>(framelogprob.cols());
-  const Eigen::ArrayXXd log_A = A->log();
+  const Eigen::ArrayXXd log_A = A.log();
   backward(n_samples, n_components, log_A, framelogprob, beta);
 }
 
 void BaseHMM::_compute_posteriors(Eigen::ArrayXXd& alpha, Eigen::ArrayXXd& beta, 
-                                  Eigen::ArrayXXd& log_gamma) {
+                                  Eigen::ArrayXXd& gamma) {
   Eigen::ArrayXXd tmp_log_gamma = alpha + beta;
   log_normalize(tmp_log_gamma);
-  // std::cout << "In _compute_posteriors:\n"
-  //           << "tmp_log_gamma:\n" << tmp_log_gamma << "\n";
-  log_gamma = tmp_log_gamma.exp();
+  gamma = tmp_log_gamma.exp();
 }
 
 void BaseHMM::_init(const std::vector<double>& X, 
-                    const std::vector<size_t>& lengths) { }
+                    const std::vector<size_t>& lengths) { 
+  double init = 1.0 / N;
+  pi = Eigen::ArrayXd::Ones(N) * init;
+  A = Eigen::ArrayXXd::Ones(N, N) * init;
+}
 
 void BaseHMM::_initialize_sufficient_statistics(size_t *n_observations,
                                                 Eigen::ArrayXd &start,
@@ -242,7 +245,7 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
 
   Eigen::ArrayXXd log_xi_sum(n_components, n_components);
   log_xi_sum = -INFINITY * Eigen::ArrayXXd::Ones(n_components, n_components);
-  const Eigen::ArrayXXd log_trans = (*A).log();
+  const Eigen::ArrayXXd log_trans = A.log();
   compute_log_xi_sum(n_samples, n_components, alpha, log_trans, beta, 
                      framelogprob, log_xi_sum);
   trans += log_xi_sum.exp();
@@ -251,19 +254,18 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
 void BaseHMM::_do_mstep(size_t n_observations, Eigen::ArrayXd& start,
                         Eigen::ArrayXXd& trans) {
   for (size_t i = 0; i < static_cast<size_t>(start.rows()); i++) {
-    (*pi)(i) = (*pi)(i) <= 1e-16 ? (*pi)(i) : start(i);
+    pi(i) = pi(i) <= 1e-16 ? pi(i) : start(i);
   }
-  normalize(*pi);
+  normalize(pi);
 
   for (size_t i = 0; i < static_cast<size_t>(trans.rows()); i++) {
     for (size_t j = 0; j < static_cast<size_t>(trans.cols()); j++) {
-      (*A)(i, j) = (*A)(i, j) <= 1e-16 ? (*A)(i, j) : trans(i, j);
+      A(i, j) = A(i, j) <= 1e-16 ? A(i, j) : trans(i, j);
     }
   }
-  normalize(*A);
+  normalize(A);
 }
 
-BaseHMM::~BaseHMM() {
-  delete A;
-  delete pi;
-}
+// BaseHMM::~BaseHMM() {
+  
+// }

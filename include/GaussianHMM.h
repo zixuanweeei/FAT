@@ -3,8 +3,8 @@
 using namespace Eigen;
 
 struct GaussianHMM : public BaseHMM {
-  ArrayXd *means_;
-  ArrayXd *covars_;
+  ArrayXd means_;
+  ArrayXd covars_;
   ArrayXd min_covar;
   ArrayXd means_prior;
   ArrayXd means_weight;
@@ -23,7 +23,7 @@ struct GaussianHMM : public BaseHMM {
               bool verbose = true, 
               double min_covar = 1e-3);
   GaussianHMM(int N,
-              double covars_prior,
+              double covars_prior = 1e-2,
               int random_seed = 47, 
               int max_epoch = 100,
               double tol = 1e-4, 
@@ -53,12 +53,12 @@ struct GaussianHMM : public BaseHMM {
   /*!
    * \brief Initialize sufficient statistics
    */
-  void _init_sufficient_statistics(size_t *n_observations,
-                                   ArrayXd &start,
-                                   ArrayXXd &trans,
-                                   ArrayXd &post,
-                                   ArrayXd &obs,
-                                   ArrayXd &obs_square);
+  void _initialize_sufficient_statistics(size_t *n_observations,
+                                         ArrayXd &start,
+                                         ArrayXXd &trans,
+                                         ArrayXd &post,
+                                         ArrayXd &obs,
+                                         ArrayXd &obs_square);
   
   void _accumulate_sufficient_statistics(size_t *n_observations,
                                          ArrayXd &start,
@@ -72,6 +72,8 @@ struct GaussianHMM : public BaseHMM {
                                          ArrayXXd& alpha,
                                          ArrayXXd& beta);
 
+  void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
+
   void _do_mstep(size_t n_observations,
                  ArrayXd &start,
                  ArrayXXd &trans,
@@ -79,5 +81,5 @@ struct GaussianHMM : public BaseHMM {
                  ArrayXd &obs,
                  ArrayXd &obs_square);
 
-  ~GaussianHMM();
+  // ~GaussianHMM();
 };
