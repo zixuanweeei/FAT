@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <Eigen/Dense>
+#include "../include/statistics_type.h"
 
 /*!
  * Hidden Markov Model with Gaussian emissions.
@@ -111,7 +112,7 @@ struct BaseHMM {
    * \param X Obeservation sequences.
    * \param lengths Lengths of individual sequences.
    */
-  virtual void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
+  void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
 
   /*!
    * \brief Viterbi algorithm.
@@ -178,9 +179,7 @@ struct BaseHMM {
    * \return start
    * \return trans
    */
-  virtual void _initialize_sufficient_statistics(size_t *n_observations,
-                                                 Eigen::ArrayXd &start,
-                                                 Eigen::ArrayXXd &trans);
+  virtual void _initialize_sufficient_statistics(Stats& stats);
 
   /*!
    * \brief Updates sufficient statistics from a given sample.
@@ -193,9 +192,7 @@ struct BaseHMM {
    * \param fwdlattice
    * \param bwdlattice
    */
-  virtual void _accumulate_sufficient_statistics(size_t *n_observations,
-                                                 Eigen::ArrayXd& start,
-                                                 Eigen::ArrayXXd& trans,
+  virtual void _accumulate_sufficient_statistics(Stats& stats,
                                                  const std::vector<double>& X,
                                                  Eigen::ArrayXXd& framelogprob,
                                                  Eigen::ArrayXXd& posteriors,
@@ -208,7 +205,7 @@ struct BaseHMM {
    * \param start
    * \param trans
    */
-  virtual void _do_mstep(size_t n_observations, Eigen::ArrayXd& start, Eigen::ArrayXXd& trans);
+  virtual void _do_mstep(Stats& stats);
 
   /*!
    * \brief Deconstructor

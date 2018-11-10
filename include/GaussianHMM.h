@@ -53,33 +53,16 @@ struct GaussianHMM : public BaseHMM {
   /*!
    * \brief Initialize sufficient statistics
    */
-  void _initialize_sufficient_statistics(size_t *n_observations,
-                                         ArrayXd &start,
-                                         ArrayXXd &trans,
-                                         ArrayXd &post,
-                                         ArrayXd &obs,
-                                         ArrayXd &obs_square);
+  void _initialize_sufficient_statistics(Stats& stats);
   
-  void _accumulate_sufficient_statistics(size_t *n_observations,
-                                         ArrayXd &start,
-                                         ArrayXXd &trans,
-                                         ArrayXd &post,
-                                         ArrayXd &obs,
-                                         ArrayXd &obs_square,
+  void _accumulate_sufficient_statistics(Stats& stats,
                                          const std::vector<double>& X,
                                          ArrayXXd& framelogprob,
                                          ArrayXXd& posteriors,
                                          ArrayXXd& alpha,
                                          ArrayXXd& beta);
 
-  void fit(const std::vector<double>& X, const std::vector<size_t>& lengths);
-
-  void _do_mstep(size_t n_observations,
-                 ArrayXd &start,
-                 ArrayXXd &trans,
-                 ArrayXd &post,
-                 ArrayXd &obs,
-                 ArrayXd &obs_square);
+  void _do_mstep(Stats& stats);
 
   // ~GaussianHMM();
 };

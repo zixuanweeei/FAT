@@ -18,7 +18,7 @@ int main() {
   ArrayXXd trans(2, 2);
   clusters << 10, 1;
   start << 1, 0;
-  trans << 0.88, 0.12, 0.05, 0.95;
+  trans << 0.88, 0.12, 0.4, 0.6;
 
   GaussianHMM hmm(2, var, 47, 1000);
   std::cout << "Max epoch - " << hmm.max_epoch << "\n";
@@ -40,7 +40,7 @@ int main() {
   signal_writer.close();
 
   std::cout << "******************* Fitting test *******************\n";
-  GaussianHMM fit_hmm(2, 1e-2, 47, 100);
+  GaussianHMM fit_hmm(2, 1e-2, -1, 100);
   std::vector<size_t> lengths;
   std::cout << "Start to fit X ...\n";
   fit_hmm.fit(X, lengths);

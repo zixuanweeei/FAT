@@ -144,12 +144,12 @@ void BaseHMM::fit(const std::vector<double>& X, const std::vector<size_t>& lengt
   _init(X, lengths);
   ConvergenceMonitor moniter(1e-4, max_epoch, true);
   IterFromIndividualLength iter(X, lengths);
-  size_t n_observations;
   size_t n_individuals = lengths.size() ? lengths.size() : 1;
   Eigen::ArrayXd tmp_pi;
   Eigen::ArrayXXd tmp_A;
+  Stats stats(X.size(), N);
   for (size_t i = 0; i < max_epoch; i++) {
-    _initialize_sufficient_statistics(&n_observations, tmp_pi, tmp_A);
+    _initialize_sufficient_statistics(stats);
     double curr_logprob = 0;
     for (size_t j = 0; j < n_individuals; j++) {
       size_t start = iter.get_start();
@@ -169,10 +169,10 @@ void BaseHMM::fit(const std::vector<double>& X, const std::vector<size_t>& lengt
       Eigen::ArrayXXd posteriors(end - start, N);
       _compute_posteriors(alpha, beta, posteriors);
 
-      _accumulate_sufficient_statistics(&n_observations, tmp_pi, tmp_A, x, 
-                                        framelogprob, posteriors, alpha, beta);
+      _accumulate_sufficient_statistics(stats, x, framelogprob, 
+                                        posteriors, alpha, beta);
     }
-    _do_mstep(n_observations, tmp_pi, tmp_A);
+    _do_mstep(stats);
 
     if (moniter.report(curr_logprob)) break;
   }
@@ -222,24 +222,20 @@ void BaseHMM::_init(const std::vector<double>& X,
   A = Eigen::ArrayXXd::Ones(N, N) * init;
 }
 
-void BaseHMM::_initialize_sufficient_statistics(size_t *n_observations,
-                                                Eigen::ArrayXd &start,
-                                                Eigen::ArrayXXd &trans) {
-  *n_observations = 0;
-  start = Eigen::ArrayXd::Zero(N);
-  trans = Eigen::ArrayXXd::Zero(N, N);
+void BaseHMM::_initialize_sufficient_statistics(Stats& stats) {
+  stats.nobs = 0;
+  stats.start = Eigen::ArrayXd::Zero(N);
+  stats.trans = Eigen::ArrayXXd::Zero(N, N);
 }
 
-void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
-                                                Eigen::ArrayXd& start,
-                                                Eigen::ArrayXXd& trans,
+void BaseHMM::_accumulate_sufficient_statistics(Stats& stats,
                                                 const std::vector<double>& X,
                                                 Eigen::ArrayXXd& framelogprob,
                                                 Eigen::ArrayXXd& posteriors,
                                                 Eigen::ArrayXXd& alpha,
                                                 Eigen::ArrayXXd& beta) {
-  (*n_observations) ++;
-  start += posteriors.row(0).transpose();
+  stats.nobs ++;
+  stats.start += posteriors.row(0).transpose();
   size_t n_samples = static_cast<size_t>(framelogprob.rows());
   size_t n_components = static_cast<size_t>(framelogprob.cols());
 
@@ -248,19 +244,18 @@ void BaseHMM::_accumulate_sufficient_statistics(size_t *n_observations,
   const Eigen::ArrayXXd log_trans = A.log();
   compute_log_xi_sum(n_samples, n_components, alpha, log_trans, beta, 
                      framelogprob, log_xi_sum);
-  trans += log_xi_sum.exp();
+  stats.trans += log_xi_sum.exp();
 }
 
-void BaseHMM::_do_mstep(size_t n_observations, Eigen::ArrayXd& start,
-                        Eigen::ArrayXXd& trans) {
-  for (size_t i = 0; i < static_cast<size_t>(start.rows()); i++) {
-    pi(i) = pi(i) <= 1e-16 ? pi(i) : start(i);
+void BaseHMM::_do_mstep(Stats& stats) {
+  for (size_t i = 0; i < static_cast<size_t>(stats.start.rows()); i++) {
+    pi(i) = pi(i) <= 1e-16 ? pi(i) : stats.start(i);
   }
   normalize(pi);
 
-  for (size_t i = 0; i < static_cast<size_t>(trans.rows()); i++) {
-    for (size_t j = 0; j < static_cast<size_t>(trans.cols()); j++) {
-      A(i, j) = A(i, j) <= 1e-16 ? A(i, j) : trans(i, j);
+  for (size_t i = 0; i < static_cast<size_t>(stats.trans.rows()); i++) {
+    for (size_t j = 0; j < static_cast<size_t>(stats.trans.cols()); j++) {
+      A(i, j) = A(i, j) <= 1e-16 ? A(i, j) : stats.trans(i, j);
     }
   }
   normalize(A);
