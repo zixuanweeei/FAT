@@ -60,7 +60,6 @@ inline double logsumexp(Eigen::Array<double, 1, -1>& X, size_t size) {
   for (size_t i = 0; i < size; i++) {
     acc += std::expl(X(i) - max_value);
   }
-
   return std::logl(acc) + max_value;
 }
 inline double logsumexp(double *X, size_t size) {
@@ -176,7 +175,7 @@ inline void log_univariate_normal_density(const std::vector<double>& X,
   constexpr double pi = 3.141592653;  
   for (size_t i = 0; i < X.size(); i++) {
     logprob.row(i) = -0.5 * (std::log(2.0 * pi) + covars.log()
-                             + pow(X[i] - means, 2.0) / covars)
+                             + Eigen::pow(X[i] - means, 2.0) / covars)
                             .transpose();
   }
 }

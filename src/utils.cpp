@@ -79,8 +79,8 @@ void compute_log_xi_sum(size_t n_observations, size_t n_components,
       for (j = 0; j < n_components; j++) {
         work_buffer[i][j] = alpha(t, i)
                             + log_transmit(i, j)
-                            + framelogprob(t, j)
-                            + beta(t, j)
+                            + framelogprob(t + 1, j)
+                            + beta(t + 1, j)
                             - logprob;
       }
     }
