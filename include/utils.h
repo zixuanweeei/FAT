@@ -16,13 +16,13 @@
 #include <random>
 
 struct ConvergenceMonitor {
-  double tol;                  /* Convergence threshold. */
-  size_t max_epoch;              /* Maximum number of epoch to update the patameters. */
-  bool verbose;               /* If `true` then per-interaction convergence reports
-                                are printed. Otherwise, the moniter is mute. */
-  std::vector<double> history; /* The log probility of the data for the last two training
-                                iteractions. */
-  size_t iter;                   /* Iteration times. */
+  double tol;                      /* Convergence threshold. */
+  size_t max_epoch;                /* Maximum number of epoch to update the patameters. */
+  bool verbose;                    /* If `true` then per-interaction convergence reports
+                                     are printed. Otherwise, the moniter is mute. */
+  std::vector<double> history;     /* The log probility of the data for the last two training
+                                     iteractions. */
+  size_t iter;                     /* Iteration times. */
 
   /*!
    * \brief Constructor for ConvergenceMonitor class
@@ -112,17 +112,37 @@ inline double logaddexp(double a, double b) {
               std::log1pl(std::expl(-std::fabsl(a - b)));
 }
 
+/*!
+ * \brief Forward pass process in Baum-Welch algorithm
+ * \param n_observations The number of observations in a sequence.
+ * \param n_components The number of state.
+ * \param log_stateprob Logarithmic start probabilities.
+ * \param log_transmit Logarithmic transmit probabilities of one state to another.
+ * \param framelogprob The logarithmic probabilities of observations on each state at every time.
+ * \return alpha Forward quantities
+ */
 void forward(size_t n_observations, size_t n_components,
              const Eigen::ArrayXd& log_stateprob,
              const Eigen::ArrayXXd& log_transmit,
              const Eigen::ArrayXXd& framelogprob,
              Eigen::ArrayXXd& alpha);
 
+/*!
+ * \brief Backward pass process in Baum-Welch algorithm
+ * \param n_observations The number of observations in a sequence.
+ * \param n_components The number of state.
+ * \param log_transmit Logarithmic transmit probabilities of one state to another.
+ * \param framelogprob The logarithmic probabilities of observations on each state at every time.
+ * \return beta Backward quantities
+ */
 void backward(size_t n_observations, size_t n_components,
              const Eigen::ArrayXXd& log_transmit,
              const Eigen::ArrayXXd& framelogprob,
              Eigen::ArrayXXd& beta);
 
+/*!
+ * \brief Compute xi using alpha, beta, log_transmit and framelogprob
+ */
 void compute_log_xi_sum(size_t n_observations, size_t n_components,
                         const Eigen::ArrayXXd& alpha,
                         const Eigen::ArrayXXd& log_transmit,
@@ -130,6 +150,9 @@ void compute_log_xi_sum(size_t n_observations, size_t n_components,
                         const Eigen::ArrayXXd& framelogprob,
                         Eigen::ArrayXXd& log_xi_sum);
 
+/*!
+ * \brief Viterbi pass to decode the latent variable from the observation sequence.
+ */
 void viterbi(size_t n_observations, size_t n_components,
              const Eigen::ArrayXd& log_startprob,
              const Eigen::ArrayXXd& log_transmit,

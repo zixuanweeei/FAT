@@ -11,14 +11,14 @@
  */
 struct BaseHMM {
   size_t N;                          /* number of states; Q = {1, 2, 3, ..., N} */
-  int random_seed;                /* A random number generator seed. */
+  int random_seed;                   /* A random number generator seed. */
   size_t max_epoch;                  /* Maximum number of epoch to update the patameters. */
-  bool verbose;                   /* Whether to rint the convergence reports. */
-  Eigen::ArrayXXd A;             /* NxN matrix. A[i][j] is the transition prob 
-                                    of going from state i at time t to state j at 
-                                    time t + 1. */
-  Eigen::ArrayXd pi;             /* Initial state probability. */
-  double tol;                     /* Convergence threshold */
+  bool verbose;                      /* Whether to rint the convergence reports. */
+  Eigen::ArrayXXd A;                 /* NxN matrix. A[i][j] is the transition prob 
+                                       of going from state i at time t to state j at 
+                                       time t + 1. */
+  Eigen::ArrayXd pi;                 /* Initial state probability. */
+  double tol;                        /* Convergence threshold */
 
   BaseHMM(size_t N = 2, int random_seed = 47, size_t max_epoch = 100,
           double tol = 1e-4, bool verbose = true) 
@@ -175,22 +175,18 @@ struct BaseHMM {
 
   /*!
    * \brief Initializes sufficient statistics required for M-step.
-   * \return n_observations
-   * \return start
-   * \return trans
+   * \return stats Statistics for EM algorithm.
    */
   virtual void _initialize_sufficient_statistics(Stats& stats);
 
   /*!
    * \brief Updates sufficient statistics from a given sample.
-   * \param n_observations
-   * \param start
-   * \param trans
-   * \param X
-   * \param framelogprob
-   * \param posteriors
-   * \param fwdlattice
-   * \param bwdlattice
+   * \param stats Statistics for EM algorithm.
+   * \param X The observation sequence.
+   * \param framelogprob Log likelihood per component under the model at each time.
+   * \param posteriors The posteriors per component at each time. It can be derived using alpha*bata.
+   * \param fwdlattice Forward quantities. Alias: alpha.
+   * \param bwdlattice Backward quantities. Alias: beta.
    */
   virtual void _accumulate_sufficient_statistics(Stats& stats,
                                                  const std::vector<double>& X,
@@ -201,9 +197,7 @@ struct BaseHMM {
   
   /*!
    * \brief Performs the M-step of EM algorithm.
-   * \param n_observations
-   * \param start
-   * \param trans
+   * \param stats Statistics for EM algorithm.
    */
   virtual void _do_mstep(Stats& stats);
 
